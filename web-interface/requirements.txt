@@ -1,0 +1,8 @@
+Flask
+requests
+openai
+Pillow
+Flask-CORS
+jsonschema
+Flask-SQLAlchemy
+APScheduler

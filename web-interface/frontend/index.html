@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Art Interface</title>
+    <!-- Link to CSS file-->
+    <link rel="stylesheet" href="css/index_styles.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="index.html" class="logo-link">
+            <img src="Bioworld_logo.jpg" alt="Logo" class="navbar-logo">
+        </a>
+        <a href="index.html" class="navbar-text">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <div class="navbar-right">
+            <a href="information.html">🛈</a>
+        </div>
+    </div>    
+    <div class="slideshow-container"></div>
+    <div class="top-section">
+        <form id="mainForm" class="prompt-form">
+            <div class="container2">
+                <p>Describe your prompt to generate unique artworks!</p>
+                <div class="prompt-bar">
+                    <input type="text" id="prompt" name="prompt" placeholder="Enter your prompt..." required>
+                    <button type="button" id="generateButton" onclick="submitForm('dalle')">Generate</button>
+                </div>
+                <button type="button" id="toggleParametersButton" onclick="toggleParameters()">Show Parameters</button>
+            </div>
+        </form>
+        <div class="container">
+            <div class="tab">
+                <button class="tablinks" onclick="openModel(event, 'dalle')">DALL-E</button>
+            </div>
+            <!-- DALL-E Model -->
+            <div id="dalle" class="tabcontent">
+                <form id="dalleForm" class="prompt-form">
+                    <table style="table-layout: fixed; width: 100%;">
+                        <tr>
+                            <td>Number of Variations:</td>
+                            <td>
+                                <select id="dalleN" name="n">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Quality:</td>
+                            <td><input type="text" id="dalleQuality" name="quality" placeholder="'Standard' or 'HD'"></td>
+                        </tr>
+                        <tr>
+                            <td>Style:</td>
+                            <td><input type="text" id="dalleStyle" name="style" placeholder="'Natural' or 'Vivid'"></td>
+                        </tr>
+                        <tr>
+                            <td>User:</td>
+                            <td><input type="text" id="dalleUser" name="user" placeholder="'Enter Name'"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="1"></td>
+                            <td style="text-align: right;"><button type="button" onclick="toggleParameters()">Save</button></td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div id="submissionMessage" style="display: none; text-align: center; margin-top: 10px;">
+            <p style="color: green;">Form submitted successfully!</p>
+        </div> 
+        <div class="bottom-section">  
+            <div class="art-container" id="artContainer"></div>
+        </div> 
+    </div>
+    <!-- Link to JavaScript file -->
+    <script src="js/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #292929;
+    margin: 0;
+    padding: 0;
+}
+.navbar {
+    background-color: #000;
+    overflow: hidden;
+    height: 65px;
+    display: flex;
+    align-items: center;
+}
+.navbar-right {
+    margin-left: auto;
+}
+.logo-link {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    text-decoration: none;
+    color: white;
+}
+.navbar-logo {
+    height: 100%;
+    width: auto;
+    max-width: 120px
+}
+.navbar-text {
+    font-size: 18px;
+}
+.navbar a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 24px 20px;
+    text-decoration: none;
+    font-size: 18px;
+}
+.navbar a:hover {
+    background-color: #ddd;
+    color: black;
+}
+.art-container {
+    width: 80%;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 0 auto;
+}
+.art-box {
+    width: calc(50% - 10px);
+    
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+.art-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 10px;
+    margin: auto;
+}
+.art-box .art-box-hover-icons {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none;
+}
+.art-box:hover .art-box-hover-icons {
+    display: flex;
+}
+.art-box-hover-icons {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none;
+}
+.art-box-hover-icons a {
+    color: #333;
+    background-color: #ddd;
+    padding: 5px;
+    border-radius: 50%;
+    margin: 0 3px;
+    text-decoration: none;
+}
+.art-box-hover-icons a:hover {
+    background-color: #aaa;
+}
+.art-box-hover-icons a i {
+    font-size: 18px;
+    line-height: 18px;
+}
+.gallery {
+    margin: 0 auto;
+    max-width: 1200px;
+    padding: 20px;
+    column-count: 5;
+    column-gap: 10px;
+}
+.gallery-item {
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    break-inside: avoid;
+}
+.gallery-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+}

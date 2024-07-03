@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Art Gallery</title>
+    <link rel="stylesheet" href="css/gallery_styles.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="index.html" class="logo-link">
+            <img src="Bioworld_logo.jpg" alt="Logo" class="navbar-logo">
+        </a>
+        <a href="index.html" class="navbar-text">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <div class="navbar-right">
+            <a href="information.html">🛈</a>
+        </div>
+    </div>   
+    <div class="gallery">
+        <!-- Gallery items will be dynamically added here -->
+    </div>
+    <div class="focus-overlay" style="display: none;">
+        <div class="focus-content">
+            <div class="focused-image">
+                <img id="focused-image" src="" alt="Focused Image">
+            </div>
+            <div class="image-details">
+                <!-- Additional text details will be added dynamically here -->
+            </div>
+        </div>
+    </div>
+    <script src="js/gallery.js"></script>
+</body>
+</html>
