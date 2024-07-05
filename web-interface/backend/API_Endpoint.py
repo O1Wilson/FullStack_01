@@ -205,7 +205,6 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
                 )
 
                 db.session.add(metadata)
-                # db.session.commit()  # Moved to outside the loop for better performance
 
                 image_urls.append({
                     'url': f"/images/{img_filename}",
