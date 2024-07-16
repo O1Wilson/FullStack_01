@@ -147,7 +147,7 @@ def generate_art(model):
 @app.route('/images/<filename>', methods=['GET'])
 def serve_image(filename):
     return send_from_directory(IMAGE_DIR, filename)
-    
+
 # Function to generate images using DALL-E
 def dalle_generate(prompt, n, width, height, quality, style, user=''):
     try:
@@ -186,30 +186,46 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
             image_urls = []
 
             for i, image_data in enumerate(images_response['data']):
-                img_data = base64.b64decode(image_data['b64_json'])
-                img = Image.open(BytesIO(img_data))
-                img_filename = f"{img_filename_prefix}_{i}.png"
-                img_path = os.path.join(IMAGE_DIR, img_filename)
-                img.save(img_path)
+                if 'url' in image_data:
+                    try:
+                        img_url = image_data['url']
 
-                metadata = ImageMetadata(
-                    filename=img_filename,
-                    timestamp=images_dt,
-                    model='dalle',
-                    prompt=prompt,
-                    width=width,
-                    height=height,
-                    quality=quality,
-                    style=style,
-                    user=user
-                )
+                        # Fetch the image from the URL
+                        img_response = requests.get(img_url)
+                        img_data = img_response.content
+                        img = Image.open(BytesIO(img_data))
 
-                db.session.add(metadata)
+                        # Save image as JPEG
+                        img_filename = f"{img_filename_prefix}_{i}.png"
+                        img_path = os.path.join("C:\\Users\\Thetr\\OneDrive\\Documents\\GitHub\\FullStack_01\\web-interface\\backend\\generated_images", img_filename)
+                        print(f"Image path: {img_path}")
+                        
+                        # Save image to disk
+                        with open(img_path, 'wb') as img_file:
+                            img_file.write(img_data)
 
-                image_urls.append({
-                    'url': f"/images/{img_filename}",
-                    'metadata': metadata
-                })
+                        # Create metadata entry
+                        metadata = ImageMetadata(
+                            filename=img_filename,
+                            timestamp=images_dt,
+                            model='dalle',
+                            prompt=prompt,
+                            width=width,
+                            height=height,
+                            quality=quality,
+                            style=style,
+                            user=user
+                        )
+
+                        db.session.add(metadata)
+
+                        image_urls.append({
+                            'url': f"/images/{img_filename}",
+                            'metadata': metadata
+                        })
+
+                    except Exception as e:
+                        print(f"Error saving image {i}: {e}")
 
             db.session.commit()  # Commit after processing all images
             return {"images": image_urls}
@@ -334,5 +350,5 @@ def get_metadata():
         return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8001)
+    app.run(debug=True, host='localhost', port=8001)
     
