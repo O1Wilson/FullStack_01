@@ -1,6 +1,6 @@
 # FullStack_01
 
-**FullStack_01** is a comprehensive web interface designed by Owen Wilson to support creative teams in managing and interacting with AI-generated images. This full-stack solution integrates a user-friendly frontend with a robust backend, offering a seamless experience for generating, displaying, and managing visual content.
+**FullStack_01** is a comprehensive web interface designed by Owen Wilson (Me) to support creative teams in managing and interacting with AI-generated images. This full-stack solution integrates a user-friendly frontend with a robust backend, offering a seamless experience for generating, displaying, and managing visual content.
 
 ## Table of Contents
 
