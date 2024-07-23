@@ -46,7 +46,7 @@ project_root = Path(__file__).parent.parent
 # STABILITY_KEY = os.getenv('STABILITY_KEY')
 
 # Configure the SQLAlchemy URI for SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://Owen.WIlson@bioworldmerch.com:bio.OW2048!@@BioVPBI02/Dev/AICreativeDB?driver=ODBC+Driver+17+for+SQL+Server'
+app.config['SQLALCHEMY_DATABASE_URI'] = 's'
 
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
@@ -57,7 +57,7 @@ if not os.path.exists(IMAGE_DIR):
     os.makedirs(IMAGE_DIR)
 
 # OpenAI API Endpoint
-openai.api_key = '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' # ENSURE THIS IS SET ON MACHINE
+openai.api_key = 's' # ENSURE THIS IS SET ON MACHINE
 STABILITY_KEY = 's'
 
 class ImageMetadata(db.Model):
