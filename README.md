@@ -227,7 +227,7 @@ This feature introduces an interactive query table designed to facilitate the ma
 ![Screenshot 2024-07-23 125905](https://github.com/user-attachments/assets/8db01dc4-76fc-4eb5-90ba-37cc4a73ff6b)
   
 - **Filtering**: Clickable headers provide access to filter options. Filters persist until toggled off and automatically close when clicking outside the filter area.
-  ![Screenshot 2024-07-23 125919](https://github.com/user-attachments/assets/eb387b38-5d06-42e9-8ee0-837413752dda)
+![Screenshot 2024-07-23 125919](https://github.com/user-attachments/assets/eb387b38-5d06-42e9-8ee0-837413752dda)
 
 - **Search**: Real-time search functionality allows users to quickly locate entries based on text input.
 ![Screenshot 2024-07-23 130155](https://github.com/user-attachments/assets/f18656ca-2fd7-4d93-9e46-bb40a3c53efc)
@@ -236,6 +236,7 @@ This feature introduces an interactive query table designed to facilitate the ma
 
 - **Prompt Pop-up**: Each row includes a "Prompt" button that triggers a pop-up displaying the associated prompt text.
 - **Image Enlargement**: Clicking on an image thumbnail opens a separate pop-up window showing an enlarged view of the image.
+
 ![Screenshot 2024-07-23 125938](https://github.com/user-attachments/assets/e6c851ea-f0f4-4e5f-9451-9e5a9a8e0897)
 
 ### User Experience Enhancements
