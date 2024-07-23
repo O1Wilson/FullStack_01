@@ -1,5 +1,41 @@
 # FullStack_01
-Full stack web interface developed by Owen Wilson. Designed for creative teams.
+
+**FullStack_01** is a comprehensive web interface designed by Owen Wilson to support creative teams in managing and interacting with AI-generated images. This full-stack solution integrates a user-friendly frontend with a robust backend, offering a seamless experience for generating, displaying, and managing visual content.
+
+## Table of Contents
+
+1. [User Story 1: Default Tab Activation and Container Visibility](#user-story-1-default-tab-activation-and-container-visibility)
+2. [User Story 2: Toggle Parameter Dropdown](#user-story-2-toggle-parameter-dropdown)
+3. [User Story 3: Tab Navigation](#user-story-3-tab-navigation)
+4. [User Story 4: Form Submission and Default Values](#user-story-4-form-submission-and-default-values)
+5. [User Story 5: Display Generated Images](#user-story-5-display-generated-images)
+6. [User Story 6: Image Download](#user-story-6-image-download)
+7. [User Story 7: Image Deletion](#user-story-7-image-deletion)
+8. [User Story 8: Image Upload](#user-story-8-image-upload)
+9. [User Story 9: AI Image Metadata Management](#user-story-9-ai-image-metadata-management)
+10. [User Story 10: Query Table with Enhanced Functionality](#user-story-10-query-table-with-enhanced-functionality)
+11. [User Story 11: Fetch Images](#user-story-11-fetch-images)
+12. [User Story 12: Infinite Scroll](#user-story-12-infinite-scroll)
+13. [User Story 13: Image Display](#user-story-13-image-display)
+14. [User Story 14: Image Interaction](#user-story-14-image-interaction)
+15. [User Story 15: Image Details](#user-story-15-image-details)
+16. [User Story 16: Image Download](#user-story-16-image-download)
+17. [User Story 17: Image Deletion](#user-story-17-image-deletion)
+18. [User Story 18: Focus Overlay](#user-story-18-focus-overlay)
+
+## Project Highlights
+
+### Advanced Metadata Management and Interactive Query Table
+
+Among the standout features of FullStack_01 are the sophisticated metadata management and the interactive query table, as showcased in User Stories 9 and 10. 
+
+- **User Story 9: AI Image Metadata Management**  
+  This feature captures and organizes detailed metadata for each AI-generated image, including filename, creation timestamp, model used, and more. The metadata is stored efficiently and can be retrieved and managed through a dedicated system, ensuring that all relevant details are readily available and easily maintained.
+
+- **User Story 10: Query Table with Enhanced Functionality**  
+  The interactive query table provides dynamic sorting, filtering, and detailed metadata viewing capabilities. Users can interact with the table to sort data, apply filters, search entries in real-time, and view detailed metadata or enlarged images. This functionality enhances the user experience by making data management more intuitive and responsive.
+
+Explore the project to see how these features, along with the other functionalities, come together to create a powerful tool for creative teams.
 
 ![Screenshot 2024-07-23 124022](https://github.com/user-attachments/assets/4b7aa75a-33a6-45ec-ac5b-23a899dbcaf4)
 (^Slideshow Background^)
@@ -188,13 +224,19 @@ This feature introduces an interactive query table designed to facilitate the ma
 ### Table Interactivity
 
 - **Sorting**: Clickable table headers enable sorting by columns. Indicators are displayed for ascending and descending order.
+![Screenshot 2024-07-23 125905](https://github.com/user-attachments/assets/8db01dc4-76fc-4eb5-90ba-37cc4a73ff6b)
+  
 - **Filtering**: Clickable headers provide access to filter options. Filters persist until toggled off and automatically close when clicking outside the filter area.
+  ![Screenshot 2024-07-23 125919](https://github.com/user-attachments/assets/eb387b38-5d06-42e9-8ee0-837413752dda)
+
 - **Search**: Real-time search functionality allows users to quickly locate entries based on text input.
+![Screenshot 2024-07-23 130155](https://github.com/user-attachments/assets/f18656ca-2fd7-4d93-9e46-bb40a3c53efc)
 
 ### Metadata Viewing
 
 - **Prompt Pop-up**: Each row includes a "Prompt" button that triggers a pop-up displaying the associated prompt text.
 - **Image Enlargement**: Clicking on an image thumbnail opens a separate pop-up window showing an enlarged view of the image.
+![Screenshot 2024-07-23 125938](https://github.com/user-attachments/assets/e6c851ea-f0f4-4e5f-9451-9e5a9a8e0897)
 
 ### User Experience Enhancements
 
@@ -210,3 +252,121 @@ This feature introduces an interactive query table designed to facilitate the ma
 5. **Close Pop-ups**: Click outside the filter area or use the close buttons on pop-ups to hide them.
 
 These enhancements provide a more interactive and user-friendly experience for managing and viewing metadata in the query table.
+
+---
+
+### User Story 11: Fetch Images
+
+**As a** user of the image gallery  
+**I want to** load a set of images for the current page  
+**So that** I can view and interact with a batch of images without loading all at once
+
+**Acceptance Criteria:**
+- The function `fetchImages(page)` must make a fetch request to the endpoint `/api/uploaded_images?page=${page}`.
+- On a successful response, it must resolve with an array of image URLs.
+- On failure, it must reject with an error message.
+  
+![Screenshot 2024-07-23 131127](https://github.com/user-attachments/assets/b3d19a0e-8f4b-4622-99f6-7e33d7bee305)
+
+---
+
+### User Story 12: Infinite Scroll
+
+**As a** user scrolling through the image gallery  
+**I want to** have new images automatically loaded when I approach the end of the page  
+**So that** I can continue browsing without manually requesting more images
+
+**Acceptance Criteria:**
+- The `loadImages` function must be triggered when the user scrolls within 100px of the bottom of the page.
+- When triggered, `loadImages` must fetch more images and append them to the gallery.
+- The `isLoading` flag must be used to prevent multiple simultaneous fetches.
+- 
+![Screenshot 2024-07-23 131211](https://github.com/user-attachments/assets/a37bf2db-6813-4b63-abcf-6f96848effdc)
+
+---
+
+### User Story 13: Image Display
+
+**As a** user viewing the image gallery  
+**I want to** see each image displayed with a maximum width and height of 250px and a border radius  
+**So that** the images are consistently styled and fit well within the gallery layout
+
+**Acceptance Criteria:**
+- Each image element must have a maximum width and height of 250px.
+- Each image must have a border radius of 8px applied.
+
+![Screenshot 2024-07-23 131228](https://github.com/user-attachments/assets/a7ce4c33-f209-4cb0-baa6-9cc3c161b069)
+
+---
+
+### User Story 14: Image Interaction
+
+**As a** user viewing an image in the gallery  
+**I want to** see hover icons that allow me to download, view details, or delete the image  
+**So that** I can easily manage and interact with the images according to my needs
+
+**Acceptance Criteria:**
+- Hover icons must include a download button, a view details button, and a delete button.
+- Clicking the download button must trigger the `downloadImage` function.
+- Clicking the view details button must trigger the `showFocusOverlay` function.
+- Clicking the delete button must trigger the `deleteImage` function.
+  
+![Screenshot 2024-07-23 131314](https://github.com/user-attachments/assets/88a5f951-42ec-4330-a39d-44de86d2ae26)
+
+---
+
+### User Story 15: Image Details
+
+**As a** user who wants more information about an image  
+**I want to** click a button to view detailed metadata about the image in a focused overlay  
+**So that** I can see relevant information like filename, timestamp, model, prompt, dimensions, quality, style, and user
+
+**Acceptance Criteria:**
+- The `showFocusOverlay` function must display the selected image in a larger view.
+- Metadata for the image must be fetched from `/api/metadata?filename=${filename}` and displayed in a detailed format.
+- The focus overlay must be visible and prevent scrolling on the body while open.
+- 
+![Screenshot 2024-07-23 131333](https://github.com/user-attachments/assets/13388cc6-d25d-4c2f-a0ce-346a2b0bc012)
+
+---
+
+### User Story 16: Image Download
+
+**As a** user who wants to download an image  
+**I want to** click a download button and receive the image file in my downloads folder  
+**So that** I can save and use the image locally
+
+**Acceptance Criteria:**
+- The `downloadImage` function must fetch the image as a Blob and create a Blob URL.
+- A temporary anchor element must be created with the Blob URL as the href and the filename set for download.
+- The anchor must be programmatically clicked to initiate the download.
+- The anchor element must be removed from the DOM and the Blob URL must be revoked after the download.
+
+![Screenshot 2024-07-23 131342](https://github.com/user-attachments/assets/c9b48b3c-676f-4d7f-b419-f253da595c8e)
+
+---
+
+### User Story 17: Image Deletion
+
+**As a** user who wants to remove an image from the gallery  
+**I want to** click a delete button and confirm the deletion  
+**So that** the image is removed from the gallery and I no longer see it
+
+**Acceptance Criteria:**
+- Clicking the delete button must display a confirmation dialog.
+- If confirmed, the image element must be removed from the DOM.
+- (Future enhancement) The function should also send a request to the server to delete the image from storage.
+
+---
+
+### User Story 18: Focus Overlay
+
+**As a** user who is viewing an image in detail  
+**I want to** see the image in a larger view with an overlay showing its details  
+**So that** I can have a focused and detailed view of the image without being distracted by other content
+
+**Acceptance Criteria:**
+- The `showFocusOverlay` function must display the image in a larger view with an overlay containing image details.
+- The overlay must be styled to cover the entire viewport and must include an image and metadata.
+- Scrolling on the body must be disabled while the overlay is visible.
+
