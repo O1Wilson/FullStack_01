@@ -69,7 +69,7 @@ async function submitForm(model) {
             user: formData.get('user')
         };
 
-        const response = await fetch(`http://localhost:8001/generate-art/${model}`, {
+        const response = await fetch(`http://ai-image-creation-dev.bioworldmerch.com:8001/generate-art/${model}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -145,7 +145,7 @@ async function submitForm(model) {
             };
 
             // Set image source after defining onload function
-            imageElement.src = 'C:\\Users\\Thetr\\OneDrive\\Documents\\GitHub\\FullStack_01\\web-interface\\backend\\generated_images/' + imageUrl;
+            imageElement.src = `backend/generated_images${imageUrl}`;
             imageElement.alt = 'Generated Art';
 
         });

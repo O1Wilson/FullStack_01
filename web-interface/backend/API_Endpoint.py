@@ -2,7 +2,6 @@ from pathlib import Path
 import requests
 from io import BytesIO
 from PIL import Image
-import base64
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -12,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 import os
 import openai
 import uuid
+import pyodbc # KEEP IN SCRIPT
 
 dalle_schema = {
     "type": "object",
@@ -34,19 +34,22 @@ CORS(app)
 # Determine the root directory of your project
 project_root = Path(__file__).parent.parent
 
-# Define the path where you want to store the SQLite database file
-db_path = project_root / 'backend' / 'database' / 'metadata.db'
-os.makedirs(db_path.parent, exist_ok=True)
+# from dotenv import load_dotenv
+# import os
+
+# # Load environment variables from .env file
+# load_dotenv()
+
+# # Access variables
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
+# openai.api_key = os.getenv('OPENAI_API_KEY')
+# STABILITY_KEY = os.getenv('STABILITY_KEY')
 
 # Configure the SQLAlchemy URI for SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://Owen.WIlson@bioworldmerch.com:bio.OW2048!@@BioVPBI02/Dev/AICreativeDB?driver=ODBC+Driver+17+for+SQL+Server'
 
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
-
-# Create all tables within the application context
-with app.app_context():
-    db.create_all()
 
 # Directory to save generated images
 IMAGE_DIR = os.path.join(app.root_path, 'generated_images')
@@ -55,6 +58,7 @@ if not os.path.exists(IMAGE_DIR):
 
 # OpenAI API Endpoint
 openai.api_key = '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' # ENSURE THIS IS SET ON MACHINE
+STABILITY_KEY = 's'
 
 class ImageMetadata(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -74,7 +78,7 @@ class ImageMetadata(db.Model):
 # Function to delete old images and metadata
 def delete_old_images_and_metadata():
     # Calculate the cutoff time dynamically as the current time minus 48 hours
-    cutoff_time = datetime.utcnow() - timedelta(hours=48)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=48)
     
     # Query the database for metadata entries older than the cutoff time
     old_metadata = ImageMetadata.query.filter(ImageMetadata.timestamp < cutoff_time).all()
@@ -147,7 +151,7 @@ def generate_art(model):
 @app.route('/images/<filename>', methods=['GET'])
 def serve_image(filename):
     return send_from_directory(IMAGE_DIR, filename)
-
+    
 # Function to generate images using DALL-E
 def dalle_generate(prompt, n, width, height, quality, style, user=''):
     try:
@@ -195,9 +199,9 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
                         img_data = img_response.content
                         img = Image.open(BytesIO(img_data))
 
-                        # Save image as JPEG
+                        # Save image as png/jpg/jpeg
                         img_filename = f"{img_filename_prefix}_{i}.png"
-                        img_path = os.path.join("C:\\Users\\Thetr\\OneDrive\\Documents\\GitHub\\FullStack_01\\web-interface\\backend\\generated_images", img_filename)
+                        img_path = os.path.join(IMAGE_DIR, img_filename)
                         print(f"Image path: {img_path}")
                         
                         # Save image to disk
@@ -232,6 +236,86 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
 
         else:
             print(f"Unexpected response format from OpenAI API: {images_response}")
+            return {"images": []}
+
+    except requests.RequestException as e:
+        print(f"Request Error: {e}")
+        return {"images": []}
+    
+# Function to generate images using Stable Diffusion
+def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
+    try:
+        # Define parameters for Stable Diffusion image generation
+        image_params = {
+            "model": "stable-diffusion-v3",  # Stable Diffusion v3 model
+            "prompt": prompt,                # Prompt for image generation
+            "negative_prompt": negative_prompt,  # Negative prompt to exclude certain features
+            "n": n,                          # Number of images to generate
+            "seed": seed,                    # Seed for reproducibility
+            "style_preset": style_preset,    # Style preset
+        }
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        # Generate images using Stable Diffusion's API
+        response = requests.post("https://api.stability.ai/v2beta/stable-image/generate/sd3", headers=headers, json=image_params)
+        images_response = response.json()  # Parse the JSON response
+        print(f"Response Status: {response.status_code}")
+        print(f"Response JSON: {images_response}")
+
+        # Check if 'data' key exists in the response
+        if 'data' in images_response:
+            images_dt = datetime.now(timezone.utc)
+            img_filename_prefix = images_dt.strftime('STABLEDIFF_%Y%m%d_%H%M%S')
+
+            image_urls = []
+
+            for i, image_data in enumerate(images_response['data']):
+                if 'url' in image_data:
+                    try:
+                        img_url = image_data['url']
+
+                        # Fetch the image from the URL
+                        img_response = requests.get(img_url)
+                        img_data = img_response.content
+                        img = Image.open(BytesIO(img_data))
+
+                        # Save image as JPEG
+                        img_filename = f"{img_filename_prefix}_{i}.png"
+                        img_path = os.path.join(IMAGE_DIR, img_filename)
+                        print(f"Image path: {img_path}")
+                        
+                        # Save image to disk
+                        with open(img_path, 'wb') as img_file:
+                            img_file.write(img_data)
+
+                        metadata = ImageMetadata(
+                            filename=img_filename,
+                            timestamp=images_dt,
+                            model='stable-diffusion',
+                            prompt=prompt,
+                            negative_prompt=negative_prompt,
+                            seed=seed,
+                            style_preset=style_preset
+                        )
+
+                        db.session.add(metadata)
+
+                        image_urls.append({
+                                    'url': f"/images/{img_filename}",
+                                    'metadata': metadata
+                                })
+                    
+                    except Exception as e:
+                        print(f"Error saving image {i}: {e}")
+
+            db.session.commit()  # Commit after processing all images
+            return {"images": image_urls}
+
+        else:
+            print(f"Unexpected response format from Stable Diffusion API: {images_response}")
             return {"images": []}
 
     except requests.RequestException as e:
@@ -278,7 +362,7 @@ def upload_images():
                 # Create new metadata entry for the uploaded image, copying from the generated image metadata
                 uploaded_metadata = ImageMetadata(
                     filename=unique_filename,
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(timezone.utc),
                     model=generated_metadata.model,
                     prompt=generated_metadata.prompt,
                     width=generated_metadata.width,
@@ -312,7 +396,7 @@ def upload_images():
 def get_uploaded_images():
     images_dir = os.path.join(app.root_path, 'backend', 'uploaded_images')
     images = os.listdir(images_dir)
-    image_list = [image for image in images if image.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+    image_list = [image for image in images if image.lower().endswith(('.jpg', '.png'))]
 
     return jsonify({'images': image_list})
 
@@ -350,5 +434,5 @@ def get_metadata():
         return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
-    app.run(debug=True, host='localhost', port=8001)
+    app.run(debug=True, host='0.0.0.0', port=8001)
     

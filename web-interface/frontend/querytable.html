@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Metadata Table</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+  <link rel="stylesheet" href="css/querytable_styles.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="index.html" class="logo-link">
+            <img src="Bioworld_logo.jpg" alt="Logo" class="navbar-logo">
+        </a>
+        <a href="index.html" class="navbar-text">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <div class="navbar-right">
+            <a href="information.html">🛈</a>
+        </div>
+    </div>    
+    <!-- Set Filter Boxes -->
+    <div class="filter-box" id="filter-user"></div>
+    <div class="filter-box" id="filter-model"></div>
+    <div class="filter-box" id="filter-size"></div>
+    <div class="filter-box" id="filter-style"></div>
+    <div class="filter-box" id="filter-quality"></div>
+    <!-- Popup Window for Enlarged Images -->
+    <div id="imagePopup" class="popup">
+        <div class="popup-content">
+            <span class="close-button" onclick="closePopup('imagePopup')">&times;</span>
+            <img id="enlargedImage" src="" alt="Enlarged Image" style="width: 100%; height: auto;">
+        </div>
+    </div>
+    <!-- Popup Window -->
+    <div id="promptPopup" class="popup">
+        <div class="popup-content">
+            <span class="close-button">&times;</span>
+            <p id="promptText"></p>
+        </div>
+    </div>
+    <!-- Table Region-->
+    <main class="container">
+        <h2>Metadata Table</h2>
+        <input type="search" id="searchInput" placeholder="Search...">
+        <table id="metadataTable">
+              <thead>
+                <tr>
+                    <th class="sortable" data-index="0">ID</th>
+                    <th>Image</th>
+                    <th class="sortable" data-index="2">Filename</th>
+                    <th>Prompt</th>
+                    <th class="sortable filterable" data-column="user" data-index="4">User</th>
+                    <th class="sortable" data-index="5">Timestamp</th>
+                    <th class="sortable filterable" data-column="quality" data-index="6">Quality</th>
+                    <th class="sortable filterable" data-column="style" data-index="7">Style</th>
+                    <th class="sortable filterable" data-column="model" data-index="8">Model</th>
+                    <th class="sortable filterable" data-column="size" data-index="9">Size</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data rows will go here -->
+            </tbody>
+        </table>
+    </main>
+    <!-- Link to JavaScript file -->
+    <script src="js/querytable.js"></script>
+</body>
+</html>
