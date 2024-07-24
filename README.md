@@ -266,6 +266,8 @@ As a user, I want the application to automatically fetch the list of uploaded im
    - The application makes a request to the backend server to fetch a list of uploaded images.
    - The application makes a request to the backend server to fetch metadata for each image.
    - The fetched metadata includes fields such as filename, prompt, user, timestamp, quality, style, model, and size.
+  
+   ![Screenshot 2024-07-24 094545](https://github.com/user-attachments/assets/9070d493-f08d-4286-9e33-b1da368103d6)
 
 2. **Handle Fetch Errors:**
    - The application handles any errors that occur during the fetch operation and logs them to the console.
