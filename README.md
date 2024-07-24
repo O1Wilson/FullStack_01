@@ -256,6 +256,42 @@ These enhancements provide a more interactive and user-friendly experience for m
 
 ---
 
+# User Story 10.5: Fetch and Display Uploaded Images with Metadata
+
+As a user, I want the application to automatically fetch the list of uploaded images and their associated metadata from the backend server when the page loads. This data should be used to populate the table, allowing me to view all images along with their details.
+
+#### Acceptance Criteria
+
+1. **Fetch Images and Metadata:**
+   - The application makes a request to the backend server to fetch a list of uploaded images.
+   - The application makes a request to the backend server to fetch metadata for each image.
+   - The fetched metadata includes fields such as filename, prompt, user, timestamp, quality, style, model, and size.
+
+2. **Handle Fetch Errors:**
+   - The application handles any errors that occur during the fetch operation and logs them to the console.
+
+3. **Render Table with Fetched Data:**
+   - The application uses the fetched data to render the table.
+   - Each row in the table displays the image, filename, prompt button, user, timestamp, quality, style, model, and size.
+
+4. **Async Data Handling:**
+   - The application ensures that fetching data from the backend and rendering the table is handled asynchronously.
+
+#### Tasks
+
+1. **Implement Data Fetching:**
+   - Create a function `fetchData` to fetch the list of uploaded images from `/api/uploaded_images`.
+   - For each image filename, fetch the metadata from `/api/metadata`.
+
+2. **Render Fetched Data:**
+   - Update the `renderTable` function to use the fetched data.
+   - Ensure the table is populated with the images and metadata once the data is fetched.
+
+3. **Error Handling:**
+   - Implement error handling to log any errors that occur during the fetch operations.
+
+---
+
 ### User Story 11: Fetch Images
 
 **As a** user of the image gallery  
