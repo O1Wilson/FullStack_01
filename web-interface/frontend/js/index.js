@@ -199,7 +199,7 @@ function deleteImage(deleteButton) {
         const artBox = deleteButton.closest('.art-box');
         if (artBox) {
             artBox.remove();
-            // Additional logic here to delete the image server-side if necessary
+            // Additional logic to be added
         }
     }
 }
@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener("click", async () => {
             const imageContainer = button.closest(".image-container");
             const hoverImage = imageContainer.querySelector(".hover-image");
-            const generatedImageFilename = imageContainer.dataset.generatedFilename; // Assume the generated filename is stored in a data attribute
+            const generatedImageFilename = imageContainer.dataset.generatedFilename;
 
             if (hoverImage && generatedImageFilename) {
                 const imageUrl = hoverImage.src;

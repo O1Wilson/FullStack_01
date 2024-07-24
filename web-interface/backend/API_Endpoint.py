@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 import os
 import openai
 import uuid
-import pyodbc # KEEP IN SCRIPT
+import pyodbc # KEEP IN SCRIPT!!
 
 dalle_schema = {
     "type": "object",
@@ -27,11 +27,7 @@ dalle_schema = {
     "required": ["prompt", "user"]
 }
 
-# Initialize Flask app
-app = Flask(__name__)
-CORS(app)
-
-# Determine the root directory of your project
+# Determine the root directory of the project
 project_root = Path(__file__).parent.parent
 
 # from dotenv import load_dotenv
@@ -45,10 +41,10 @@ project_root = Path(__file__).parent.parent
 # openai.api_key = os.getenv('OPENAI_API_KEY')
 # STABILITY_KEY = os.getenv('STABILITY_KEY')
 
-# Configure the SQLAlchemy URI for SQLite
+# Initialize Flask
+app = Flask(__name__)
+CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 's'
-
-# Initialize SQLAlchemy
 db = SQLAlchemy(app)
 
 # Directory to save generated images
@@ -57,7 +53,7 @@ if not os.path.exists(IMAGE_DIR):
     os.makedirs(IMAGE_DIR)
 
 # OpenAI API Endpoint
-openai.api_key = 's' # ENSURE THIS IS SET ON MACHINE
+openai.api_key = 's' 
 STABILITY_KEY = 's'
 
 class ImageMetadata(db.Model):
@@ -71,6 +67,7 @@ class ImageMetadata(db.Model):
     quality = db.Column(db.String(50))
     style = db.Column(db.String(50))
     user = db.Column(db.String(50))
+    is_generated = db.Column(db.Boolean, default=True)
 
     def __repr__(self):
         return f"<ImageMetadata {self.id}>"
@@ -80,8 +77,11 @@ def delete_old_images_and_metadata():
     # Calculate the cutoff time dynamically as the current time minus 48 hours
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=48)
     
-    # Query the database for metadata entries older than the cutoff time
-    old_metadata = ImageMetadata.query.filter(ImageMetadata.timestamp < cutoff_time).all()
+    # Query the database for generated metadata entries older than the cutoff time
+    old_metadata = ImageMetadata.query.filter(
+        ImageMetadata.timestamp < cutoff_time,
+        ImageMetadata.is_generated == True  # Only consider generated images
+    ).all()
     
     for metadata in old_metadata:
         try:
@@ -180,7 +180,6 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
         response = requests.post("https://api.openai.com/v1/images/generations", headers=headers, json=image_params)
         images_response = response.json()  # Parse the JSON response
         print(f"Response Status: {response.status_code}")
-        print(f"Response JSON: {response.json()}")
 
         # Check if 'data' key exists in the response
         if 'data' in images_response:
@@ -218,7 +217,8 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
                             height=height,
                             quality=quality,
                             style=style,
-                            user=user
+                            user=user,
+                            is_generated=True
                         )
 
                         db.session.add(metadata)
@@ -298,7 +298,8 @@ def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
                             prompt=prompt,
                             negative_prompt=negative_prompt,
                             seed=seed,
-                            style_preset=style_preset
+                            style_preset=style_preset,
+                            is_generated=True
                         )
 
                         db.session.add(metadata)
@@ -350,7 +351,7 @@ def upload_images():
                 return jsonify({'message': f'Metadata for the generated image {generated_image_filename} not found'}), 404
 
             # Generate a unique filename using UUID
-            unique_filename = str(uuid.uuid4()) + '.jpg'
+            unique_filename = str(uuid.uuid4()) + '.png'
             filename = os.path.join(folder_path, unique_filename)
 
             # Download the image from the provided URL
@@ -369,7 +370,8 @@ def upload_images():
                     height=generated_metadata.height,
                     quality=generated_metadata.quality,
                     style=generated_metadata.style,
-                    user=generated_metadata.user
+                    user=generated_metadata.user,
+                    is_generated=False
                 )
 
                 db.session.add(uploaded_metadata)
