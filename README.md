@@ -1,6 +1,26 @@
-# FullStack_01
+## FullStack_01
 
-**FullStack_01** is a comprehensive web interface designed by Owen Wilson (Me) to support creative teams in managing and interacting with AI-generated images. This full-stack solution integrates a user-friendly frontend with a robust backend, offering a seamless experience for generating, displaying, and managing visual content.
+**FullStack_01** is an innovative web application crafted by Owen Wilson (Me) to empower creative teams with seamless management and interaction capabilities for AI-generated images. This comprehensive full-stack solution merges a user-friendly frontend with a robust backend, offering an intuitive experience for generating, displaying, and administering visual content.
+
+### Key Functionalities
+
+**User Stories**: FullStack_01 is designed around 18 user stories that define its core functionalities, including:
+
+- Default tab activation and container visibility management.
+- Toggleable parameter dropdown for flexible settings viewing.
+- Seamless tab navigation for efficient content access.
+- Form submission with default value handling for complete data submission.
+- Display of AI-generated images in a responsive container with interaction options.
+- Download, delete, and upload functionalities for image management.
+- Robust AI image metadata capture, storage, retrieval, and management.
+- Enhanced query table functionality with sorting, filtering, and metadata viewing.
+- Automatic image fetching, pagination, and infinite scroll for optimal user experience.
+
+### Technical Overview
+
+**Technology Stack**: Built using modern technologies including HTML5, CSS3, JavaScript (React.js for frontend, Node.js for backend), and integrates RESTful APIs for seamless data exchange. Database management ensures efficient storage and retrieval of image metadata, supporting scalability and performance.
+
+---
 
 ## Table of Contents
 
@@ -22,12 +42,6 @@
 16. [User Story 16: Image Download](#user-story-16-image-download)
 17. [User Story 17: Image Deletion](#user-story-17-image-deletion)
 18. [User Story 18: Focus Overlay](#user-story-18-focus-overlay)
-
-## Project Highlights
-
-### Advanced Metadata Management and Interactive Query Table
-
-Among the standout features of FullStack_01 are the sophisticated metadata management and the interactive query table, as showcased in User Stories 9 and 10. 
 
 - **User Story 9: AI Image Metadata Management**  
   This feature captures and organizes detailed metadata for each AI-generated image, including filename, creation timestamp, model used, and more. The metadata is stored efficiently and can be retrieved and managed through a dedicated system, ensuring that all relevant details are readily available and easily maintained.
