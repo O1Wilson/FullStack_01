@@ -1,17 +1,16 @@
 from pathlib import Path
-import requests
 from io import BytesIO
 from PIL import Image
-from flask import Flask, request, jsonify, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, request, jsonify, send_from_directory, redirect, url_for, session
+from requests_oauthlib import OAuth2Session
 from jsonschema import validate, ValidationError
 from flask_cors import CORS
-from datetime import datetime, timezone, timedelta
+from flask_sqlalchemy import SQLAlchemy
+from dotenv import load_dotenv
+from datetime import datetime, timezone
+import requests
 import os
 import openai
-import uuid
-import pyodbc # KEEP IN SCRIPT!!
 
 dalle_schema = {
     "type": "object",
@@ -30,31 +29,27 @@ dalle_schema = {
 # Determine the root directory of the project
 project_root = Path(__file__).parent.parent
 
-# from dotenv import load_dotenv
-# import os
-
-# # Load environment variables from .env file
-# load_dotenv()
+load_dotenv()
 
 # # Access variables
-# app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
-# openai.api_key = os.getenv('OPENAI_API_KEY')
-# STABILITY_KEY = os.getenv('STABILITY_KEY')
+sqlalchemy_database_uri = os.getenv('SQLALCHEMY_DATABASE_URI')
+openai_api_key = os.getenv('OPENAI_API_KEY')
+stability_key = os.getenv('STABILITY_KEY')
+okta_secret_key = os.getenv('OKTA_SECRET_KEY')
+okta_client_id = os.getenv('OKTA_CLIENT_ID')
+okta_client_secret = os.getenv('OKTA_CLIENT_SECRET')
+okta_domain = os.getenv('OKTA_DOMAIN')
+server_domain = os.getenv('SERVER_DOMAIN')
 
 # Initialize Flask
 app = Flask(__name__)
 CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 's'
+app.config['SQLALCHEMY_DATABASE_URI'] = ''
 db = SQLAlchemy(app)
 
-# Directory to save generated images
-IMAGE_DIR = os.path.join(app.root_path, 'generated_images')
-if not os.path.exists(IMAGE_DIR):
-    os.makedirs(IMAGE_DIR)
-
-# OpenAI API Endpoint
-openai.api_key = 's' 
-STABILITY_KEY = 's'
+# Set the values in the app configuration
+openai.api_key = ''
+STABILITY_KEY = ''
 
 class ImageMetadata(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -67,42 +62,89 @@ class ImageMetadata(db.Model):
     quality = db.Column(db.String(50))
     style = db.Column(db.String(50))
     user = db.Column(db.String(50))
-    is_generated = db.Column(db.Boolean, default=True)
+    is_generated = db.Column(db.SmallInteger, default=0)
 
-    def __repr__(self):
-        return f"<ImageMetadata {self.id}>"
+# Define the network share path
+NETWORK_SHARE_PATH = r'\\callisto\Data'
 
-# Function to delete old images and metadata
-def delete_old_images_and_metadata():
-    # Calculate the cutoff time dynamically as the current time minus 48 hours
-    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=48)
-    
-    # Query the database for generated metadata entries older than the cutoff time
-    old_metadata = ImageMetadata.query.filter(
-        ImageMetadata.timestamp < cutoff_time,
-        ImageMetadata.is_generated == True  # Only consider generated images
-    ).all()
-    
-    for metadata in old_metadata:
-        try:
-            # Delete the image file associated with the metadata
-            image_path = os.path.join(IMAGE_DIR, metadata.filename)
-            if os.path.exists(image_path):
-                os.remove(image_path)
-            
-            # Delete the metadata entry from the database
-            db.session.delete(metadata)
-        except Exception as e:
-            print(f"Error deleting file {metadata.filename}: {str(e)}")
-    
-    # Commit the transaction to finalize the deletions
+app.secret_key = ''
+
+# Okta settings
+OKTA_CLIENT_ID = ''
+OKTA_CLIENT_SECRET = ''
+OKTA_AUTH_SERVER = f"https://{okta_domain}/oauth2/default"
+OKTA_REDIRECT_URI = f"http://{server_domain}/login/callback"
+
+
+@app.route('/')
+def home():
+    return 'Welcome to OAuth with Okta in Flask!'
+
+@app.route('/login')
+def login():
+    okta = OAuth2Session(OKTA_CLIENT_ID, redirect_uri=OKTA_REDIRECT_URI)
+    authorization_url, state = okta.authorization_url(OKTA_AUTH_SERVER + '/v1/authorize')
+    session['oauth_state'] = state
+    return redirect(authorization_url)
+
+@app.route('/login/callback')
+def callback():
+    okta = OAuth2Session(OKTA_CLIENT_ID, state=session['oauth_state'], redirect_uri=OKTA_REDIRECT_URI)
+    token = okta.fetch_token(
+        OKTA_AUTH_SERVER + '/v1/token',
+        client_secret=OKTA_CLIENT_SECRET,
+        authorization_response=request.url,
+    )
+    # Store the token securely, for example in session
+    session['oauth_token'] = token
+    return redirect(url_for('protected'))
+
+@app.route('/protected')
+def protected():
+    if 'oauth_token' in session:
+        # Use the token to access protected resources from Okta APIs
+        return 'You are logged in!'
+    else:
+        return redirect(url_for('login'))
+
+
+@app.route('/upload-data', methods=['POST'])
+def upload_data():
+    data = request.json
+    # Insert data into the database
+    for item in data:
+        new_entry = ImageMetadata(
+            id=item['id'],
+            filename=item['filename'],
+            prompt=item['prompt'],
+            user=item['user'],
+            quality=item['quality'],
+            style=item['style'],
+            model=item['model'],
+            size=item['size'],
+            is_generated = 1
+        )
+        db.session.add(new_entry)
     db.session.commit()
-    print("Old images and metadata deleted.")
+    return jsonify({'status': 'success'}), 200
 
-# Schedule the cleanup task to run every 48 hours
-scheduler = BackgroundScheduler()
-scheduler.add_job(delete_old_images_and_metadata, 'interval', hours=48)
-scheduler.start()
+@app.route('/api/metadata', methods=['GET'])
+def get_metadata():
+    metadata = ImageMetadata.query.all()
+    metadata_list = [{
+        'id': item.id,
+        'filename': item.filename,
+        'timestamp': item.timestamp,
+        'model': item.model,
+        'prompt': item.prompt,
+        'width': item.width,
+        'height': item.height,
+        'quality': item.quality,
+        'style': item.style,
+        'user': item.user,
+        'is_generated': item.is_generated
+    } for item in metadata]
+    return jsonify(metadata_list)
 
 # Route to generate art
 @app.route('/generate-art/<model>', methods=['POST'])
@@ -150,7 +192,7 @@ def generate_art(model):
 # Route to serve images    
 @app.route('/images/<filename>', methods=['GET'])
 def serve_image(filename):
-    return send_from_directory(IMAGE_DIR, filename)
+    return send_from_directory(NETWORK_SHARE_PATH, filename)
     
 # Function to generate images using DALL-E
 def dalle_generate(prompt, n, width, height, quality, style, user=''):
@@ -186,7 +228,7 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
             images_dt = datetime.now(timezone.utc)
             img_filename_prefix = images_dt.strftime('DALLE_%Y%m%d_%H%M%S')
 
-            image_urls = []
+            image_details = []
 
             for i, image_data in enumerate(images_response['data']):
                 if 'url' in image_data:
@@ -196,43 +238,27 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
                         # Fetch the image from the URL
                         img_response = requests.get(img_url)
                         img_data = img_response.content
-                        img = Image.open(BytesIO(img_data))
 
                         # Save image as png/jpg/jpeg
-                        img_filename = f"{img_filename_prefix}_{i}.png"
-                        img_path = os.path.join(IMAGE_DIR, img_filename)
+                        img_filename = f"{img_filename_prefix}_{i}.jpg"
+                        img_path = os.path.join(NETWORK_SHARE_PATH, img_filename)
                         print(f"Image path: {img_path}")
                         
                         # Save image to disk
                         with open(img_path, 'wb') as img_file:
                             img_file.write(img_data)
 
-                        # Create metadata entry
-                        metadata = ImageMetadata(
-                            filename=img_filename,
-                            timestamp=images_dt,
-                            model='dalle',
-                            prompt=prompt,
-                            width=width,
-                            height=height,
-                            quality=quality,
-                            style=style,
-                            user=user,
-                            is_generated=True
-                        )
-
-                        db.session.add(metadata)
-
-                        image_urls.append({
-                            'url': f"/images/{img_filename}",
-                            'metadata': metadata
+                        image_details.append({
+                            'url': f"\\callisto\Data\{img_filename}",
+                            'filename': img_filename,
+                            'timestamp': images_dt,
+                            'is_generated': 1
                         })
 
                     except Exception as e:
                         print(f"Error saving image {i}: {e}")
 
-            db.session.commit()  # Commit after processing all images
-            return {"images": image_urls}
+            return {"images": image_details}
 
         else:
             print(f"Unexpected response format from OpenAI API: {images_response}")
@@ -284,35 +310,20 @@ def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
 
                         # Save image as JPEG
                         img_filename = f"{img_filename_prefix}_{i}.png"
-                        img_path = os.path.join(IMAGE_DIR, img_filename)
+                        img_path = os.path.join(NETWORK_SHARE_PATH, img_filename)
                         print(f"Image path: {img_path}")
                         
                         # Save image to disk
                         with open(img_path, 'wb') as img_file:
                             img_file.write(img_data)
 
-                        metadata = ImageMetadata(
-                            filename=img_filename,
-                            timestamp=images_dt,
-                            model='stable-diffusion',
-                            prompt=prompt,
-                            negative_prompt=negative_prompt,
-                            seed=seed,
-                            style_preset=style_preset,
-                            is_generated=True
-                        )
-
-                        db.session.add(metadata)
-
                         image_urls.append({
-                                    'url': f"/images/{img_filename}",
-                                    'metadata': metadata
+                                    'url': f"\\callisto\Data\{img_filename}",
                                 })
                     
                     except Exception as e:
                         print(f"Error saving image {i}: {e}")
 
-            db.session.commit()  # Commit after processing all images
             return {"images": image_urls}
 
         else:
@@ -323,118 +334,99 @@ def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
         print(f"Request Error: {e}")
         return {"images": []}
 
-# Route to upload images
-@app.route('/upload', methods=['POST'])
-def upload_images():
-    data = request.get_json()
-    images = data.get('images')
-
-    if not images or not isinstance(images, list):
-        return jsonify({'message': 'Invalid request. "images" should be a list of objects with "imageUrl" and "generatedImageFilename"'}), 400
-
-    response_data = []
-
+#Route to create image variations
+@app.route('/create-variations', methods=['POST'])
+def create_variations():
     try:
-        folder_path = os.path.join(app.root_path, 'uploaded_images')
-        os.makedirs(folder_path, exist_ok=True)
+        data = request.json
+        print(f"Received JSON data: {data}")
 
-        for image_data in images:
-            imageUrl = image_data.get('imageUrl')
-            generated_image_filename = image_data.get('generatedImageFilename')
+        if data is None:
+            return jsonify({'error': 'Invalid JSON data received'}), 400
 
-            if not imageUrl or not generated_image_filename:
-                return jsonify({'message': 'Invalid request. Each image object must contain "imageUrl" and "generatedImageFilename"'}), 400
+        image_url = data.get('image_url')
+        n = int(data.get('n', 1))
+        width = int(data.get('width', 1024))
+        height = int(data.get('height', 1024))
+        user = data.get('user', '')
 
-            # Retrieve metadata from the generated image
-            generated_metadata = ImageMetadata.query.filter_by(filename=generated_image_filename).first()
-            if not generated_metadata:
-                return jsonify({'message': f'Metadata for the generated image {generated_image_filename} not found'}), 404
+        # Validate input parameters
+        if not image_url:
+            return jsonify({'error': 'image_url is required'}), 400
 
-            # Generate a unique filename using UUID
-            unique_filename = str(uuid.uuid4()) + '.png'
-            filename = os.path.join(folder_path, unique_filename)
-
-            # Download the image from the provided URL
-            response = requests.get(imageUrl)
-            if response.status_code == 200:
-                with open(filename, 'wb') as f:
-                    f.write(response.content)
-
-                # Create new metadata entry for the uploaded image, copying from the generated image metadata
-                uploaded_metadata = ImageMetadata(
-                    filename=unique_filename,
-                    timestamp=datetime.now(timezone.utc),
-                    model=generated_metadata.model,
-                    prompt=generated_metadata.prompt,
-                    width=generated_metadata.width,
-                    height=generated_metadata.height,
-                    quality=generated_metadata.quality,
-                    style=generated_metadata.style,
-                    user=generated_metadata.user,
-                    is_generated=False
-                )
-
-                db.session.add(uploaded_metadata)
-
-                response_data.append({
-                    'uploaded_filename': unique_filename,
-                    'message': 'Image uploaded successfully'
-                })
-                
-            else:
-                response_data.append({
-                    'uploaded_filename': None,
-                    'message': f'Failed to download image from {imageUrl}. URL may be invalid'
-                })
-
-        db.session.commit()
-        return jsonify(response_data), 200
+        # Create image variations
+        results = dalle_create_variations(image_url, n, width, height, user=user)
+        return jsonify(results), 200
 
     except Exception as e:
-        return jsonify({'message': f'Error uploading images: {str(e)}'}), 500
+        print(f"Exception occurred: {str(e)}")
+        return jsonify({'error': str(e)}), 500
     
-# Endpoint to fetch list of uploaded images
-@app.route('/api/uploaded_images')
-def get_uploaded_images():
-    images_dir = os.path.join(app.root_path, 'backend', 'uploaded_images')
-    images = os.listdir(images_dir)
-    image_list = [image for image in images if image.lower().endswith(('.jpg', '.png'))]
-
-    return jsonify({'images': image_list})
-
-# Route to fetch metadata based on filename
-@app.route('/api/metadata', methods=['GET'])
-def get_metadata():
-    filename = request.args.get('filename')
-
-    if not filename:
-        return jsonify({'error': 'Filename parameter is required'}), 400
-
+# Function to create image variations using DALL-E
+def dalle_create_variations(image_url, n, width, height, user=''):
     try:
-        # Query metadata from the database
-        metadata = ImageMetadata.query.filter_by(filename=filename).first()
-
-        if not metadata:
-            return jsonify({'error': 'Metadata not found for the given filename'}), 404
-
-        # Construct JSON response
-        metadata_dict = {
-            'filename': metadata.filename,
-            'timestamp': metadata.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'model': metadata.model,
-            'prompt': metadata.prompt,
-            'width': metadata.width,
-            'height': metadata.height,
-            'quality': metadata.quality,
-            'style': metadata.style,
-            'user': metadata.user
+        # Define parameters for DALL-E image variation creation
+        variation_params = {
+            "model": "dall-e-3",        # DALL-E 3 model
+            "image_url": image_url,     # URL of the image to create variations from
+            "n": n,                     # Number of variations to create
+            "size": f"{width}x{height}",# Image dimensions
+            "user": user,               # User parameter added
+            "response_format": "url"
         }
 
-        return jsonify(metadata_dict), 200
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {openai.api_key}"
+        }
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Create image variations using OpenAI's API
+        response = requests.post("https://api.openai.com/v1/images/variations", headers=headers, json=variation_params)
+        variations_response = response.json()  # Parse the JSON response
+        print(f"Response Status: {response.status_code}")
+
+        # Check if 'data' key exists in the response
+        if 'data' in variations_response:
+            variations_dt = datetime.now(timezone.utc)
+            var_filename_prefix = variations_dt.strftime('VARIATION_%Y%m%d_%H%M%S')
+
+            variation_urls = []
+
+            for i, variation_data in enumerate(variations_response['data']):
+                if 'url' in variation_data:
+                    try:
+                        var_url = variation_data['url']
+
+                        # Fetch the image from the URL
+                        var_response = requests.get(var_url)
+                        var_data = var_response.content
+                        var_img = Image.open(BytesIO(var_data))
+
+                        # Save image as png/jpg/jpeg
+                        var_filename = f"{var_filename_prefix}_{i}.png"
+                        var_path = os.path.join(NETWORK_SHARE_PATH, var_filename)
+                        print(f"Variation path: {var_path}")
+
+                        # Save image to disk
+                        with open(var_path, 'wb') as var_file:
+                            var_file.write(var_data)
+
+                        variation_urls.append({
+                            'url': f"\\callisto\Data\{var_filename}",
+                        })
+
+                    except Exception as e:
+                        print(f"Error saving variation {i}: {e}")
+
+            return {"variations": variation_urls}
+
+        else:
+            print(f"Unexpected response format from OpenAI API: {variations_response}")
+            return {"variations": []}
+
+    except requests.RequestException as e:
+        print(f"Request Error: {e}")
+        return {"variations": []}
     
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8001)
-    

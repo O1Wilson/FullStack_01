@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Art Interface</title>
+    <title>AllSpark</title>
     <!-- Link to CSS file-->
     <link rel="stylesheet" href="css/index_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="navbar">
@@ -13,10 +14,7 @@
             <img src="css/images/image_0.jpg" alt="Logo" class="navbar-logo">
         </a>
         <a href="index.html" class="navbar-text">Home</a>
-        <a href="gallery.html">Gallery</a>
-        <div class="navbar-right">
-            <a href="querytable.html">🛈</a>
-        </div>
+        <a href="querytable.html">Library</a>
     </div>    
     <div class="slideshow-container"></div>
     <div class="top-section">
@@ -73,8 +71,24 @@
             <p style="color: green;">Form submitted successfully!</p>
         </div> 
         <div class="bottom-section">  
-            <div class="art-container" id="artContainer"></div>
+            <div class="art-container" id="artContainer">
+                <!-- Art Goes Here -->
+            </div>
         </div> 
+    </div>
+    <!-- Loading Popup -->
+    <div id="loadingPopup" class="loading-popup">
+        <div class="loading-content">
+            <p>Generating image, please wait...</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+    <!-- Error Popup -->
+    <div id="errorPopup" class="loading-popup" style="display: none;">
+        <div class="loading-content">
+            <p>Failed to generate images. Please try again.</p>
+            <button onclick="document.getElementById('errorPopup').style.display='none'">Close</button>
+        </div>
     </div>
     <!-- Link to JavaScript file -->
     <script src="js/index.js"></script>

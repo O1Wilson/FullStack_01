@@ -39,6 +39,10 @@ function openModel(evt, modelName) {
 // Function to submit form data
 async function submitForm(model) {
     try {
+
+        // Show the loading popup
+        document.getElementById('loadingPopup').style.display = 'flex';
+
         // Get the form data based on the active tab
         const formData = new FormData(document.getElementById(`${model}Form`));
 
@@ -82,6 +86,9 @@ async function submitForm(model) {
         }
 
         const result = await response.json(); // Assuming API returns JSON data
+
+        // Extract the necessary data from the response
+        const uploadData = responseData.data;
 
         const artContainer = document.getElementById('artContainer');
         artContainer.innerHTML = ''; // Clear existing content
@@ -156,8 +163,28 @@ async function submitForm(model) {
             submissionMessage.style.display = 'none';
         }, 3000);
 
+        // Upload data
+        const uploadResponse = await fetch('http://ai-image-creation-dev.bioworldmerch.com:8001/upload-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(uploadData),
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('Failed to upload data');
+        }
+
+    console.log('Data uploaded successfully');
+
     } catch (error) {
         console.error('Error fetching and displaying images:', error);
+
+        document.getElementById('errorPopup').style.display = 'flex';
+    } finally {
+        // Hide the loading popup
+        document.getElementById('loadingPopup').style.display = 'none';
     }
 }
 
