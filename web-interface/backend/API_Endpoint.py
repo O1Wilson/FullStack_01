@@ -1,16 +1,18 @@
-from pathlib import Path
+import os
+import requests
+import datetime
+from datetime import timezone
 from io import BytesIO
+from pathlib import Path
 from PIL import Image
-from flask import Flask, request, jsonify, send_from_directory, redirect, url_for, session
-from requests_oauthlib import OAuth2Session
+import openai
 from jsonschema import validate, ValidationError
+from flask import Flask, request, jsonify, send_from_directory, redirect, url_for, session
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from requests_oauthlib import OAuth2Session
 from dotenv import load_dotenv
-from datetime import datetime, timezone
-import requests
-import os
-import openai
+import logging
 
 dalle_schema = {
     "type": "object",
@@ -44,12 +46,13 @@ server_domain = os.getenv('SERVER_DOMAIN')
 # Initialize Flask
 app = Flask(__name__)
 CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = ''
+app.config['SQLALCHEMY_DATABASE_URI'] = sqlalchemy_database_uri
 db = SQLAlchemy(app)
+logging.info(f"Server Initialized.")
 
 # Set the values in the app configuration
-openai.api_key = ''
-STABILITY_KEY = ''
+openai.api_key = openai_api_key
+STABILITY_KEY = stability_key
 
 class ImageMetadata(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -67,11 +70,11 @@ class ImageMetadata(db.Model):
 # Define the network share path
 NETWORK_SHARE_PATH = r'\\callisto\Data'
 
-app.secret_key = ''
+app.secret_key = okta_secret_key
 
 # Okta settings
-OKTA_CLIENT_ID = ''
-OKTA_CLIENT_SECRET = ''
+OKTA_CLIENT_ID = okta_client_id
+OKTA_CLIENT_SECRET = okta_client_secret
 OKTA_AUTH_SERVER = f"https://{okta_domain}/oauth2/default"
 OKTA_REDIRECT_URI = f"http://{server_domain}/login/callback"
 
@@ -151,15 +154,18 @@ def get_metadata():
 def generate_art(model):
     try:
         data = request.json
-        print(f"Received JSON data: {data}")
+        logging.info(f"Received JSON data: {data}")
         
         if data is None:
+            logging.info(f"Error: Invalid JSON data received.")
             return jsonify({'error': 'Invalid JSON data received'}), 400
 
         # Choose schema based on the model
         if model == 'dalle':
             schema = dalle_schema
+            logging.info("DALL-E schema selected.")
         else:
+            logging.info(f"Invalid Model")
             return jsonify({'error': 'Invalid model'}), 400
 
         # Validate against the chosen schema
@@ -177,21 +183,26 @@ def generate_art(model):
         # Process based on the model type
         if model == 'dalle':
             results = dalle_generate(prompt, n, width, height, quality, style, user=user)
+            logging.info("Using DALL-E to create image")
         else:
+            logging.info("Invalid Model")
             return jsonify({'error': 'Invalid model'}), 400
 
         return jsonify(results), 200
 
     except ValidationError as e:
+        logging.info(f"Invalid JSON format: {e.message}")
         return jsonify({'error': f'Invalid JSON format: {e.message}'}), 400
 
     except Exception as e:
+        logging.info(f"Exception occurred: {str(e)}")
         print(f"Exception occurred: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
 # Route to serve images    
 @app.route('/images/<filename>', methods=['GET'])
 def serve_image(filename):
+    logging.info(f"Fetching {filename}")
     return send_from_directory(NETWORK_SHARE_PATH, filename)
     
 # Function to generate images using DALL-E
@@ -213,6 +224,8 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
         if style:
             image_params["style"] = style
 
+        logging.info(f"Fetched image parameters for DALL-E")
+
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {openai.api_key}"
@@ -221,7 +234,7 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
         # Generate images using OpenAI's API
         response = requests.post("https://api.openai.com/v1/images/generations", headers=headers, json=image_params)
         images_response = response.json()  # Parse the JSON response
-        print(f"Response Status: {response.status_code}")
+        logging.info(f"Response Status: {response.status_code}")
 
         # Check if 'data' key exists in the response
         if 'data' in images_response:
@@ -236,35 +249,42 @@ def dalle_generate(prompt, n, width, height, quality, style, user=''):
                         img_url = image_data['url']
 
                         # Fetch the image from the URL
+                        logging.info(f"Fetching the image from URL {img_url}")
                         img_response = requests.get(img_url)
                         img_data = img_response.content
 
                         # Save image as png/jpg/jpeg
                         img_filename = f"{img_filename_prefix}_{i}.jpg"
                         img_path = os.path.join(NETWORK_SHARE_PATH, img_filename)
-                        print(f"Image path: {img_path}")
+                        logging.info(f"Image path: {img_path}")
+                        print(f"Image path: {img_path}") # Test Statement Delete Later
                         
                         # Save image to disk
                         with open(img_path, 'wb') as img_file:
                             img_file.write(img_data)
+                        logging.info("Image saved to disk.")
 
                         image_details.append({
-                            'url': f"\\callisto\Data\{img_filename}",
+                            'url': f"\\\\callisto\\Data\\{img_filename}",
                             'filename': img_filename,
                             'timestamp': images_dt,
                             'is_generated': 1
                         })
+                        logging.info("Successfully appended details.")
 
                     except Exception as e:
+                        logging.exception(f"Error saving image {i}: {e}")
                         print(f"Error saving image {i}: {e}")
 
             return {"images": image_details}
 
         else:
+            logging.info(f"Unexpected response format from OpenAI API: {images_response}")
             print(f"Unexpected response format from OpenAI API: {images_response}")
             return {"images": []}
 
     except requests.RequestException as e:
+        logging.exception(f"Request Error: {e}")
         print(f"Request Error: {e}")
         return {"images": []}
     
@@ -288,8 +308,8 @@ def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
         # Generate images using Stable Diffusion's API
         response = requests.post("https://api.stability.ai/v2beta/stable-image/generate/sd3", headers=headers, json=image_params)
         images_response = response.json()  # Parse the JSON response
-        print(f"Response Status: {response.status_code}")
-        print(f"Response JSON: {images_response}")
+        logging.info(f"Response Status: {response.status_code}")
+        logging.info(f"Response JSON: {images_response}")
 
         # Check if 'data' key exists in the response
         if 'data' in images_response:
@@ -304,6 +324,7 @@ def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
                         img_url = image_data['url']
 
                         # Fetch the image from the URL
+                        logging.info(f"Fetching image url {img_url}")
                         img_response = requests.get(img_url)
                         img_data = img_response.content
                         img = Image.open(BytesIO(img_data))
@@ -311,26 +332,31 @@ def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
                         # Save image as JPEG
                         img_filename = f"{img_filename_prefix}_{i}.png"
                         img_path = os.path.join(NETWORK_SHARE_PATH, img_filename)
-                        print(f"Image path: {img_path}")
+                        logging.info(f"Image path {img_path}")
                         
                         # Save image to disk
                         with open(img_path, 'wb') as img_file:
                             img_file.write(img_data)
+                        logging.info("Image saved to disk")
 
                         image_urls.append({
-                                    'url': f"\\callisto\Data\{img_filename}",
+                                    'url': f"\\\\callisto\\Data\\{img_filename}",
                                 })
+                        logging.info("Successfully appended image urls in image_urls.")
                     
                     except Exception as e:
+                        logging.info(f"Error saving image {i}: {e}")
                         print(f"Error saving image {i}: {e}")
 
             return {"images": image_urls}
 
         else:
+            logging.info(f"Unexpected response format from Stable Diffusion API: {images_response}")
             print(f"Unexpected response format from Stable Diffusion API: {images_response}")
             return {"images": []}
 
     except requests.RequestException as e:
+        logging.exception(f"Request Error: {e}")
         print(f"Request Error: {e}")
         return {"images": []}
 
@@ -339,9 +365,10 @@ def stable_diffusion_generate(prompt, negative_prompt, n, seed, style_preset):
 def create_variations():
     try:
         data = request.json
-        print(f"Received JSON data: {data}")
+        logging.info(f"Received JSON data: {data}")
 
         if data is None:
+            logging.info("Error: Invalid JSON data received.")
             return jsonify({'error': 'Invalid JSON data received'}), 400
 
         image_url = data.get('image_url')
@@ -352,6 +379,7 @@ def create_variations():
 
         # Validate input parameters
         if not image_url:
+            logging.info("Error: image_url is required.")
             return jsonify({'error': 'image_url is required'}), 400
 
         # Create image variations
@@ -359,6 +387,7 @@ def create_variations():
         return jsonify(results), 200
 
     except Exception as e:
+        logging.exception(f"Exception occurred: {str(e)}")
         print(f"Exception occurred: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
@@ -383,7 +412,7 @@ def dalle_create_variations(image_url, n, width, height, user=''):
         # Create image variations using OpenAI's API
         response = requests.post("https://api.openai.com/v1/images/variations", headers=headers, json=variation_params)
         variations_response = response.json()  # Parse the JSON response
-        print(f"Response Status: {response.status_code}")
+        logging.info(f"Response Status: {response.status_code}")
 
         # Check if 'data' key exists in the response
         if 'data' in variations_response:
@@ -398,6 +427,7 @@ def dalle_create_variations(image_url, n, width, height, user=''):
                         var_url = variation_data['url']
 
                         # Fetch the image from the URL
+                        logging.info(f"Fetched image from URL {var_url}")
                         var_response = requests.get(var_url)
                         var_data = var_response.content
                         var_img = Image.open(BytesIO(var_data))
@@ -405,26 +435,31 @@ def dalle_create_variations(image_url, n, width, height, user=''):
                         # Save image as png/jpg/jpeg
                         var_filename = f"{var_filename_prefix}_{i}.png"
                         var_path = os.path.join(NETWORK_SHARE_PATH, var_filename)
-                        print(f"Variation path: {var_path}")
+                        logging.info(f"Variation path: {var_path}")
 
                         # Save image to disk
                         with open(var_path, 'wb') as var_file:
                             var_file.write(var_data)
+                        logging.info(f"Image {var_data} saved to disk.")
 
                         variation_urls.append({
-                            'url': f"\\callisto\Data\{var_filename}",
+                            'url': f"\\\\callisto\\Data\\{var_filename}",
                         })
+                        logging.info("Appended variation urls to variation_urls.")
 
                     except Exception as e:
+                        logging.exception(f"Error saving variation {i}: {e}")
                         print(f"Error saving variation {i}: {e}")
 
             return {"variations": variation_urls}
 
         else:
+            logging.info(f"Unexpected response format from OpenAI API: {variations_response}")
             print(f"Unexpected response format from OpenAI API: {variations_response}")
             return {"variations": []}
 
     except requests.RequestException as e:
+        logging.exception(f"Request Error: {e}")
         print(f"Request Error: {e}")
         return {"variations": []}
     

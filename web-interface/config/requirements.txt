@@ -1,9 +1,9 @@
-Flask
-Flask-SQLAlchemy
-APScheduler
-jsonschema
-Flask-CORS
+pathlib
 Pillow
-requests
-pyodbc 
+flask
+requests_oauthlib
+jsonschema
+flask_cors
+flask_sqlalchemy
+python-dotenv
 openai

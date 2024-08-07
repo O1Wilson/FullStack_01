@@ -59,7 +59,7 @@ async function submitForm(model) {
 
         // Fill null values with defaults
         fillNullWithDefault('n', '1');
-        fillNullWithDefault('quality', 'standard');
+        fillNullWithDefault('quality', 'hd');
         fillNullWithDefault('style', 'natural');
 
 
